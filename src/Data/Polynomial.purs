@@ -70,33 +70,38 @@ instance ringPolynomial :: (Eq a, Ring a) => Ring (Polynomial a) where
 
 instance commutativeRingPolynomial :: (Eq a, CommutativeRing a) => CommutativeRing (Polynomial a)
 
-instance euclideanRingPolynomial :: (Eq a, EuclideanRing a) => EuclideanRing (Polynomial a) where
+instance euclideanRingPolynomial :: (Eq a, Field a) => EuclideanRing (Polynomial a) where
   degree = polynomialDegree
-  div n d = (polynomialDivMod n d).div
-  mod n d = (polynomialDivMod n d).mod
+  div x y = (polynomialDivMod x y).div
+  mod x y = (polynomialDivMod x y).mod
 
 polynomialDegree :: forall a. Polynomial a -> Int
 polynomialDegree = coefficients >>> Array.length >>> (_ - 1)
 
--- See https://en.wikipedia.org/wiki/Polynomial_long_division.
+-- See https://en.wikipedia.org/wiki/Polynomial_greatest_common_divisor#Euclidean_division
 polynomialDivMod :: forall a.
-  (Eq a, EuclideanRing a) =>
+  (Eq a, Field a) =>
   Polynomial a ->
   Polynomial a ->
   { div :: Polynomial a, mod :: Polynomial a }
-polynomialDivMod n d = go zero n
+polynomialDivMod a b = go zero a
   where
     -- Get the leading term of a nonzero polynomial
-    lead = unsafePartial (fromJust <<< Array.last <<< coefficients)
+    lc = unsafePartial (fromJust <<< Array.last <<< coefficients)
+    d = polynomialDegree b
+    c = lc b
     go q r =
-      if r == zero || polynomialDegree r < polynomialDegree d
-        then
-          { div: q, mod: r }
-        else
-          let
-            t = lead r / lead d
-          in
-            go (q + constant t) (r - (constant t * d))
+      let
+        degreeDiff = polynomialDegree r - d
+      in
+        if degreeDiff < 0
+          then
+            { div: q, mod: r }
+          else
+            let
+              s = Polynomial (shiftBy degreeDiff zero [lc r / c])
+            in
+              go (q + s) (r - (s * b))
 
 -- | Insert the given number of copies of the given value at the start of an
 -- | array.
