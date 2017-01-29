@@ -3,7 +3,7 @@ module Test.Main where
 import Prelude
 import Control.Monad.Eff.Console (log)
 import Data.ModularArithmetic (Z)
-import Data.Polynomial (Polynomial, evaluate, pretty)
+import Data.Polynomial (Polynomial, evaluate, constant, pretty)
 import Data.Typelevel.Num (D11)
 import Test.QuickCheck (Result(..), quickCheck, quickCheck', (<?>), (===))
 import Test.QuickCheck.Laws.Data (checkCommutativeRing, checkEq, checkEuclideanRing, checkMonoid, checkRing, checkSemigroup, checkSemiring)
@@ -21,6 +21,13 @@ main = do
   -- This takes too long
   -- checkSemigroup p11
   checkMonoid p11
+
+  log "Checking composition of a polynomial with a constant"
+  quickCheck' 1000 \(p :: Polynomial (Z D11)) x y ->
+    let
+      q = constant x
+    in
+      evaluate (p <> q) y == evaluate p x
 
   log "Checking that evaluate is a homomorphism with respect to addition"
   quickCheck \(p :: Polynomial (Z D11)) q x ->
