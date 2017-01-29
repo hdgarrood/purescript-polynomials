@@ -23,11 +23,11 @@ main = do
   checkMonoid p11
 
   log "Checking composition of a polynomial with a constant"
-  quickCheck' 1000 \(p :: Polynomial (Z D11)) x y ->
+  quickCheck' 1000 \(p :: Polynomial (Z D11)) x ->
     let
       q = constant x
     in
-      evaluate (p <> q) y == evaluate p x
+      (p <> q) == constant (evaluate p x)
 
   log "Checking that evaluate is a homomorphism with respect to addition"
   quickCheck \(p :: Polynomial (Z D11)) q x ->
