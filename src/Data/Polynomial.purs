@@ -4,6 +4,7 @@ module Data.Polynomial
   , coefficients
   , constant
   , identity
+  , compose
   , evaluate
   , pretty
   , VPolynomial(..)
@@ -91,8 +92,7 @@ instance euclideanRingPolynomial :: (Eq a, Field a) => EuclideanRing (Polynomial
 --   + a_2*b_2^2 x^4
 --
 instance semigroupPolynomial :: (Eq a, Semiring a) => Semigroup (Polynomial a) where
-  append (Polynomial coeffs) y =
-    evaluate (Polynomial (map constant coeffs)) y
+  append = compose
 
 instance monoidPolynomial :: (Eq a, Semiring a) => Monoid (Polynomial a) where
   mempty = identity
@@ -100,6 +100,12 @@ instance monoidPolynomial :: (Eq a, Semiring a) => Monoid (Polynomial a) where
 -- | The identity polynomial; `P(x) = x`.
 identity :: forall a. Semiring a => Polynomial a
 identity = Polynomial [zero, one]
+
+-- | Compose two polynomials, by treating them as functions. Composing with
+-- | `identity` yields the same polynomial.
+compose :: forall a. (Eq a, Semiring a) => Polynomial a -> Polynomial a -> Polynomial a
+compose (Polynomial coeffs) =
+  evaluate (Polynomial (map constant coeffs))
 
 polynomialDegree :: forall a. Polynomial a -> Int
 polynomialDegree = coefficients >>> Array.length >>> (_ - 1)
