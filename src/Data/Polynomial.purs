@@ -10,14 +10,14 @@ module Data.Polynomial
 import Prelude
 import Data.Array as Array
 import Data.String as String
-import Data.Foldable (foldl, foldr, sum)
-import Data.Generic.Rep (class Generic)
+import Data.Foldable (foldl, foldr)
 import Data.Maybe (Maybe(..), fromJust)
-import Data.Newtype (class Newtype, unwrap)
+import Data.Monoid (class Monoid)
 import Data.String (Pattern(..))
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable (unfoldr)
 import Partial.Unsafe (unsafePartial)
+import Test.QuickCheck (class Arbitrary, arbitrary)
 
 -- Invariant: There are no trailing zeroes in a Polynomial. This ensures that
 -- the degree can be accurately computed.
@@ -26,22 +26,20 @@ import Partial.Unsafe (unsafePartial)
 -- | So for example, a `Polynomial Int` is a polynomial with integer
 -- | coefficients.
 -- |
--- | The representation is an array, where the
--- | element at the index n is the coefficient of x^n. So e.g. x^2 + 1 is
--- | represented as `Polynomial [1, 0, 1]` and x^2 + 3x + 2 is represented as
--- | `Polynomial [2, 3, 1]`.
+-- | The `Monoid` instance works by considering polynomials as functions, where
+-- | `<>` corresponds to function composition and the identity polynomial
+-- | `mempty` is nothing more than the identity function `P(x) = x`.
 newtype Polynomial a = Polynomial (Array a)
 
 derive newtype instance functorPolynomial :: Functor Polynomial
 derive newtype instance eqPolynomial :: Eq a => Eq (Polynomial a)
--- derive instance genericPolynomial :: Generic a => Generic (Polynomial a) _
 
 -- Drop trailing zeroes.
 normalise :: forall a. (Eq a, Semiring a) => Array a -> Array a
-normalise xs =
-  Array.reverse xs
-  # Array.dropWhile (_ == zero)
-  # Array.reverse
+normalise = Array.reverse <<< Array.dropWhile (_ == zero) <<< Array.reverse
+
+instance arbitraryPolynomial :: (Eq a, Semiring a, Arbitrary a) => Arbitrary (Polynomial a) where
+  arbitrary = map (Polynomial <<< normalise) arbitrary
 
 fromCoefficients :: forall a. (Eq a, Semiring a) => Array a -> Polynomial a
 fromCoefficients = Polynomial <<< normalise
@@ -76,6 +74,27 @@ instance euclideanRingPolynomial :: (Eq a, Field a) => EuclideanRing (Polynomial
   degree = polynomialDegree
   div x y = (polynomialDivMod x y).div
   mod x y = (polynomialDivMod x y).mod
+
+--   (a_0 + a_1 x + a_2 x^2) . (b_0 + b_1 x + b_2 x^2)
+-- =
+--   a_0 + a_1 (b_0 + b_1 x + b_2 x^2) + a_2 (b_0 + b_1 x + b_2 x^2)^2
+-- =
+--   a_0 + a_1*b_0 + a_2*b_0^2
+--   + a_1*b_1 x + a_2*(2*b_0*b_1) x
+--   + a_1*b_2 x^2 + a_2*(b_1^2 + 2*b_0*b_2) x^2
+--   + a_2*(2*b_1*b_2) x^3
+--   + a_2*b_2^2 x^4
+--
+instance semigroupPolynomial :: (Eq a, Semiring a) => Semigroup (Polynomial a) where
+  append (Polynomial coeffs) y =
+    evaluate (Polynomial (map constant coeffs)) y
+
+instance monoidPolynomial :: (Eq a, Semiring a) => Monoid (Polynomial a) where
+  mempty = identity
+
+-- | The identity polynomial; `P(x) = x`.
+identity :: forall a. Semiring a => Polynomial a
+identity = Polynomial [zero, one]
 
 polynomialDegree :: forall a. Polynomial a -> Int
 polynomialDegree = coefficients >>> Array.length >>> (_ - 1)
