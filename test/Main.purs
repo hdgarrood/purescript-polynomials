@@ -52,9 +52,12 @@ main = do
 
   log "Behaviour of degree with respect to composition"
   quickCheck' 1000 \(p :: Polynomial (Z D11)) q ->
-    (p /= zero && q /= zero) `implies`
-      (degree (p <> q) == degree p * degree q
-        <?> "p: " <> pretty p <> ", q: " <> pretty q <> ", p<>q: " <> pretty (p <> q))
+    let
+      pq = p <> q
+    in
+      (p /= zero && q /= zero && pq /= zero) `implies`
+        (degree pq == degree p * degree q
+          <?> "p: " <> pretty p <> ", q: " <> pretty q <> ", pq: " <> pretty pq)
 
 implies :: Boolean -> Result -> Result
 implies true x = x
