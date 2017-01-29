@@ -6,11 +6,15 @@ module Data.Polynomial
   , identity
   , evaluate
   , pretty
+  , VPolynomial(..)
   ) where
 
 import Prelude
+import Data.Newtype (class Newtype)
 import Data.Array as Array
 import Data.String as String
+import Data.Group (class Group, class CommutativeGroup)
+import Data.VectorSpace (class VectorSpace)
 import Data.Foldable (foldl, foldr)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Monoid (class Monoid)
@@ -181,3 +185,32 @@ parenthesise str =
   if String.contains (Pattern " ") str
     then "(" <> str <> ")"
     else str
+
+-- | A newtype wrapper of polynomials which provides a `VectorSpace` instance.
+-- | We use a `newtype` because the `Polynomial` type already has a `Semigroup`
+-- | instance corresponding to polynomial composition; this `newtype` instead
+-- | uses addition for its `Semigroup` instance.
+newtype VPolynomial a = VPolynomial (Polynomial a)
+
+derive newtype instance eqVPolynomial :: Eq a => Eq (VPolynomial a)
+derive newtype instance functorVPolynomial :: Functor VPolynomial
+derive newtype instance semiringVPolynomial :: (Eq a, Semiring a) => Semiring (VPolynomial a)
+derive newtype instance ringVPolynomial :: (Eq a, Ring a) => Ring (VPolynomial a)
+derive newtype instance commutativeringVPolynomial :: (Eq a, CommutativeRing a) => CommutativeRing (VPolynomial a)
+derive newtype instance euclideanRingVPolynomial :: (Eq a, Field a) => EuclideanRing (VPolynomial a)
+
+derive instance newtypeVPolynomial :: Newtype (VPolynomial a) _
+
+instance semigroupVPolynomial :: (Eq a, Semiring a) => Semigroup (VPolynomial a) where
+  append = (+)
+
+instance monoidVPolynomial :: (Eq a, Semiring a) => Monoid (VPolynomial a) where
+  mempty = zero
+
+instance groupVPolynomial :: (Eq a, Ring a) => Group (VPolynomial a) where
+  ginverse = negate
+
+instance commutativeGroupVPolynomial :: (Eq a, Ring a) => CommutativeGroup (VPolynomial a)
+
+instance vectorSpaceVPolynomial :: (Eq a, Field a) => VectorSpace (VPolynomial a) a where
+  scalarMul x p = map (_ * x) p
