@@ -156,6 +156,7 @@ evaluate (Polynomial coeffs) x =
 
 
 pretty :: forall a. (Show a, Semiring a, Eq a) => Polynomial a -> String
+pretty (Polynomial []) = show (zero :: a)
 pretty (Polynomial coeffs) =
   let
     xPow =
