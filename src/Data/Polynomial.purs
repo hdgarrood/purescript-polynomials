@@ -2,13 +2,15 @@ module Data.Polynomial
   ( Polynomial
   , fromCoefficients
   , coefficients
+  , constant
+  , evaluate
   , pretty
   ) where
 
 import Prelude
 import Data.Array as Array
 import Data.String as String
-import Data.Foldable (foldr, sum)
+import Data.Foldable (foldl, foldr, sum)
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Newtype (class Newtype, unwrap)
@@ -121,10 +123,22 @@ preservingZipWith f def xs ys = unfoldr go 0
         Nothing, Just y -> Just (Tuple (f def y) (i+1))
         _, _ -> Nothing
 
+-- | Evaluate a polynomial by supplying a value for x.
+evaluate :: forall a. Semiring a => Polynomial a -> a -> a
+evaluate (Polynomial coeffs) x =
+  (foldl go { acc: zero, val: one } coeffs).acc
+  where
+    go { acc, val } coeff =
+      let
+        newVal = val * x
+        term = coeff * val
+      in
+        { acc: acc + term, val: newVal }
+
+
 pretty :: forall a. (Show a, Semiring a, Eq a) => Polynomial a -> String
-pretty p@(Polynomial xs) =
+pretty (Polynomial coeffs) =
   let
-    deg = Array.length xs - 1
     xPow =
       case _ of
         0 -> ""
@@ -135,7 +149,7 @@ pretty p@(Polynomial xs) =
       | coeff == one = Just $ if i == 0 then show (one :: a) else (xPow i)
       | otherwise = Just (parenthesise (show coeff) <> xPow i)
   in
-    Array.mapWithIndex term xs
+    Array.mapWithIndex term coeffs
     # Array.catMaybes
     # String.joinWith " + "
 
