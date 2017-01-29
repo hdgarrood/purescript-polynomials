@@ -3,6 +3,7 @@ module Data.Polynomial
   , fromCoefficients
   , coefficients
   , constant
+  , identity
   , evaluate
   , pretty
   ) where
