@@ -6,6 +6,8 @@ module Data.Polynomial
   , identity
   , compose
   , evaluate
+  , innerProduct
+  , antiderivative
   , pretty
   , VPolynomial(..)
   ) where
@@ -19,6 +21,7 @@ import Data.VectorSpace (class VectorSpace)
 import Data.Foldable (foldl, foldr)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Monoid (class Monoid)
+import Data.Int as Int
 import Data.String (Pattern(..))
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable (unfoldr)
@@ -191,6 +194,25 @@ parenthesise str =
   if String.contains (Pattern " ") str
     then "(" <> str <> ")"
     else str
+
+-- | We can consider the set of polynomials with real coefficients as a real vector
+-- | space. In this case, this function defines an inner product given by the
+-- | integral of the product of the arguments between 0 and 1.
+innerProduct :: Polynomial Number -> Polynomial Number -> Number
+innerProduct p q = evaluate (antiderivative (p*q)) 1.0
+
+-- | Gives the antiderivative of a particular polynomial having a constant
+-- | term of 0. For example, an antiderivative of `2x + 1` is `x^2 + x`.
+-- |
+-- | ```purescript
+-- | antiderivative (fromCoefficients [1.0,2.0])
+-- |   == fromCoefficients [0.0,1.0,1.0]
+-- | ```
+antiderivative :: Polynomial Number -> Polynomial Number
+antiderivative (Polynomial coeffs) =
+  Polynomial ([0.0] <> Array.mapWithIndex shift coeffs)
+  where
+  shift i a = a / (Int.toNumber i + 1.0)
 
 -- | A newtype wrapper of polynomials which provides a `VectorSpace` instance.
 -- | We use a `newtype` because the `Polynomial` type already has a `Semigroup`
