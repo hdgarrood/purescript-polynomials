@@ -184,6 +184,7 @@ pretty (Polynomial coeffs) =
   in
     Array.mapWithIndex term coeffs
     # Array.catMaybes
+    # Array.reverse
     # String.joinWith " + "
 
 instance showPolynomial :: (Show a, Semiring a, Eq a) => Show (Polynomial a) where
