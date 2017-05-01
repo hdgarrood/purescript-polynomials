@@ -5,9 +5,11 @@ module Data.Polynomial
   , constant
   , identity
   , evaluate
-  , innerProduct
   , derivative
   , antiderivative
+  , innerProduct
+  , norm
+  , projection
   , pretty
   ) where
 
@@ -208,6 +210,16 @@ innerProduct p q = evaluate (antiderivative (p*q)) 1.0
 -- | The square root of the inner product of a polynomial with itself.
 norm :: Polynomial Number -> Number
 norm p = Math.sqrt (innerProduct p p)
+
+-- | Considering polynomials as vectors, `projection p q` gives the orthogonal
+-- | projection of `q` onto `p`. If we let `r = projection p q`, then `r`
+-- | satisfies the following properties:
+-- |
+-- | * `innerProduct (q - r) p == 0` (approximately)
+-- | * `innerProduct p r ==  norm p * norm r i.e. `p` and `r` are linearly
+-- |    dependent.
+projection :: Polynomial Number -> Polynomial Number -> Polynomial Number
+projection p q = constant (innerProduct p q / innerProduct p p) * p
 
 -- | Gives the derivative of a polynomial. For example, the derivative of `x^2
 -- | + 3x + 2` is `2x + 3`.
