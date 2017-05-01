@@ -4,20 +4,15 @@ module Data.Polynomial
   , coefficients
   , constant
   , identity
-  , compose
   , evaluate
   , innerProduct
   , antiderivative
   , pretty
-  , VPolynomial(..)
   ) where
 
 import Prelude
-import Data.Newtype (class Newtype)
 import Data.Array as Array
 import Data.String as String
-import Data.Group (class Group, class CommutativeGroup)
-import Data.VectorSpace (class VectorSpace)
 import Data.Foldable (foldl, foldr)
 import Data.Maybe (Maybe(..), fromJust)
 import Data.Monoid (class Monoid)
@@ -44,13 +39,13 @@ derive newtype instance functorPolynomial :: Functor Polynomial
 derive newtype instance eqPolynomial :: Eq a => Eq (Polynomial a)
 
 -- Drop trailing zeroes.
-normalise :: forall a. (Eq a, Semiring a) => Array a -> Array a
+normalise :: forall a. Eq a => Semiring a => Array a -> Array a
 normalise = Array.reverse <<< Array.dropWhile (_ == zero) <<< Array.reverse
 
 instance arbitraryPolynomial :: (Eq a, Semiring a, Arbitrary a) => Arbitrary (Polynomial a) where
   arbitrary = map (Polynomial <<< normalise) arbitrary
 
-fromCoefficients :: forall a. (Eq a, Semiring a) => Array a -> Polynomial a
+fromCoefficients :: forall a. Eq a => Semiring a => Array a -> Polynomial a
 fromCoefficients = Polynomial <<< normalise
 
 coefficients :: forall a. Polynomial a -> Array a
@@ -58,7 +53,7 @@ coefficients (Polynomial xs) = xs
 
 -- | Create a polynomial with a single (given) term and no dependence in x:
 -- | that is, a constant polynomial; one of degree 0.
-constant :: forall a. (Eq a, Semiring a) => a -> Polynomial a
+constant :: forall a. Eq a => Semiring a => a -> Polynomial a
 constant = fromCoefficients <<< pure
 
 instance semiringPolynomial :: (Eq a, Semiring a) => Semiring (Polynomial a) where
@@ -95,7 +90,7 @@ instance euclideanRingPolynomial :: (Eq a, Field a) => EuclideanRing (Polynomial
 --   + a_2*b_2^2 x^4
 --
 instance semigroupPolynomial :: (Eq a, Semiring a) => Semigroup (Polynomial a) where
-  append = compose
+  append = polynomialCompose
 
 instance monoidPolynomial :: (Eq a, Semiring a) => Monoid (Polynomial a) where
   mempty = identity
@@ -104,10 +99,10 @@ instance monoidPolynomial :: (Eq a, Semiring a) => Monoid (Polynomial a) where
 identity :: forall a. Semiring a => Polynomial a
 identity = Polynomial [zero, one]
 
--- | Compose two polynomials, by treating them as functions. Composing with
--- | `identity` yields the same polynomial.
-compose :: forall a. (Eq a, Semiring a) => Polynomial a -> Polynomial a -> Polynomial a
-compose (Polynomial coeffs) =
+-- | Compose two polynomials, by treating them as functions. Composing any
+-- | polynomial with `identity` yields the same polynomial.
+polynomialCompose :: forall a. Eq a => Semiring a => Polynomial a -> Polynomial a -> Polynomial a
+polynomialCompose (Polynomial coeffs) =
   evaluate (Polynomial (map constant coeffs))
 
 polynomialDegree :: forall a. Polynomial a -> Int
@@ -115,7 +110,8 @@ polynomialDegree = coefficients >>> Array.length >>> (_ - 1)
 
 -- See https://en.wikipedia.org/wiki/Polynomial_greatest_common_divisor#Euclidean_division
 polynomialDivMod :: forall a.
-  (Eq a, Field a) =>
+  Eq a =>
+  Field a =>
   Polynomial a ->
   Polynomial a ->
   { div :: Polynomial a, mod :: Polynomial a }
@@ -168,7 +164,7 @@ evaluate (Polynomial coeffs) x =
       in
         { acc: acc + term, val: newVal }
 
-pretty :: forall a. (Show a, Semiring a, Eq a) => Polynomial a -> String
+pretty :: forall a. Show a => Semiring a => Eq a => Polynomial a -> String
 pretty (Polynomial []) = show (zero :: a)
 pretty (Polynomial coeffs) =
   let
@@ -214,32 +210,3 @@ antiderivative (Polynomial coeffs) =
   Polynomial ([0.0] <> Array.mapWithIndex shift coeffs)
   where
   shift i a = a / (Int.toNumber i + 1.0)
-
--- | A newtype wrapper of polynomials which provides a `VectorSpace` instance.
--- | We use a `newtype` because the `Polynomial` type already has a `Semigroup`
--- | instance corresponding to polynomial composition; this `newtype` instead
--- | uses addition for its `Semigroup` instance.
-newtype VPolynomial a = VPolynomial (Polynomial a)
-
-derive newtype instance eqVPolynomial :: Eq a => Eq (VPolynomial a)
-derive newtype instance functorVPolynomial :: Functor VPolynomial
-derive newtype instance semiringVPolynomial :: (Eq a, Semiring a) => Semiring (VPolynomial a)
-derive newtype instance ringVPolynomial :: (Eq a, Ring a) => Ring (VPolynomial a)
-derive newtype instance commutativeringVPolynomial :: (Eq a, CommutativeRing a) => CommutativeRing (VPolynomial a)
-derive newtype instance euclideanRingVPolynomial :: (Eq a, Field a) => EuclideanRing (VPolynomial a)
-
-derive instance newtypeVPolynomial :: Newtype (VPolynomial a) _
-
-instance semigroupVPolynomial :: (Eq a, Semiring a) => Semigroup (VPolynomial a) where
-  append = (+)
-
-instance monoidVPolynomial :: (Eq a, Semiring a) => Monoid (VPolynomial a) where
-  mempty = zero
-
-instance groupVPolynomial :: (Eq a, Ring a) => Group (VPolynomial a) where
-  ginverse = negate
-
-instance commutativeGroupVPolynomial :: (Eq a, Ring a) => CommutativeGroup (VPolynomial a)
-
-instance vectorSpaceVPolynomial :: (Eq a, Field a) => VectorSpace (VPolynomial a) a where
-  scalarMul x p = map (_ * x) p
