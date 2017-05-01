@@ -6,11 +6,13 @@ module Data.Polynomial
   , identity
   , evaluate
   , innerProduct
+  , derivative
   , antiderivative
   , pretty
   ) where
 
 import Prelude
+import Math as Math
 import Data.Array as Array
 import Data.String as String
 import Data.Foldable (foldl, foldr)
@@ -45,9 +47,14 @@ normalise = Array.reverse <<< Array.dropWhile (_ == zero) <<< Array.reverse
 instance arbitraryPolynomial :: (Eq a, Semiring a, Arbitrary a) => Arbitrary (Polynomial a) where
   arbitrary = map (Polynomial <<< normalise) arbitrary
 
+-- | Construct a polynomial from coefficients. The constant coefficient comes
+-- | first, so for example the polynomial `x^4 + 2x^3 + 3x^2 + 4` could be
+-- | constructed by writing `fromCoefficients [4,3,2,1]`. Any trailing zeros
+-- | are ignored.
 fromCoefficients :: forall a. Eq a => Semiring a => Array a -> Polynomial a
 fromCoefficients = Polynomial <<< normalise
 
+-- | Inverse of `fromCoefficients`, up to trailing zeros.
 coefficients :: forall a. Polynomial a -> Array a
 coefficients (Polynomial xs) = xs
 
@@ -198,12 +205,29 @@ parenthesise str =
 innerProduct :: Polynomial Number -> Polynomial Number -> Number
 innerProduct p q = evaluate (antiderivative (p*q)) 1.0
 
--- | Gives the antiderivative of a particular polynomial having a constant
--- | term of 0. For example, an antiderivative of `2x + 1` is `x^2 + x`.
+-- | The square root of the inner product of a polynomial with itself.
+norm :: Polynomial Number -> Number
+norm p = Math.sqrt (innerProduct p p)
+
+-- | Gives the derivative of a polynomial. For example, the derivative of `x^2
+-- | + 3x + 2` is `2x + 3`.
 -- |
 -- | ```purescript
--- | antiderivative (fromCoefficients [1.0,2.0])
--- |   == fromCoefficients [0.0,1.0,1.0]
+-- | antiderivative (fromCoefficients [2.0,3.0,1.0])
+-- |   == fromCoefficients [3.0,2.0]
+-- | ```
+derivative :: Polynomial Number -> Polynomial Number
+derivative (Polynomial coeffs) =
+  Polynomial (Array.drop 1 (Array.mapWithIndex go coeffs))
+  where
+  go i a = Int.toNumber i * a
+
+-- | Gives the antiderivative of a particular polynomial having a constant
+-- | term of 0. For example, an antiderivative of `2x + 3` is `x^2 + 3x`.
+-- |
+-- | ```purescript
+-- | antiderivative (fromCoefficients [3.0,2.0])
+-- |   == fromCoefficients [0.0,3.0,1.0]
 -- | ```
 antiderivative :: Polynomial Number -> Polynomial Number
 antiderivative (Polynomial coeffs) =
