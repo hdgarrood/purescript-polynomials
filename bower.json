@@ -1,5 +1,6 @@
 {
   "name": "purescript-polynomials",
+  "license": "MIT",
   "ignore": [
     "**/.*",
     "node_modules",
