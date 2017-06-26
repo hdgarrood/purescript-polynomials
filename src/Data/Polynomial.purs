@@ -83,7 +83,7 @@ instance ringPolynomial :: (Eq a, Ring a) => Ring (Polynomial a) where
 
 instance commutativeRingPolynomial :: (Eq a, CommutativeRing a) => CommutativeRing (Polynomial a)
 
-instance euclideanRingPolynomial :: (Eq a, EuclideanRing a) => EuclideanRing (Polynomial a) where
+instance euclideanRingPolynomial :: (Eq a, Field a) => EuclideanRing (Polynomial a) where
   degree = polynomialDegree
   div x y = (polynomialDivMod x y).div
   mod x y = (polynomialDivMod x y).mod
@@ -120,7 +120,7 @@ polynomialDegree = coefficients >>> Array.length >>> (_ - 1)
 -- See https://en.wikipedia.org/wiki/Polynomial_greatest_common_divisor#Euclidean_division
 polynomialDivMod :: forall a.
   Eq a =>
-  EuclideanRing a =>
+  Field a =>
   Polynomial a ->
   Polynomial a ->
   { div :: Polynomial a, mod :: Polynomial a }

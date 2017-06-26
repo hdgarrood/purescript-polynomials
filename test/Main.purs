@@ -11,18 +11,7 @@ import Type.Proxy (Proxy(..))
 
 main = do
   let p11 = Proxy :: Proxy (Polynomial (Z D11))
-  let pInt = Proxy :: Proxy Int
 
-  log "Checking laws for Polynomial Int"
-  log "================================"
-  checkEq pInt
-  checkSemiring pInt
-  checkRing pInt
-  checkCommutativeRing pInt
-  checkEuclideanRing pInt
-
-  log "Checking laws for Polynomial (Z (D11))"
-  log "======================================"
   checkEq p11
   checkSemiring p11
   checkRing p11
