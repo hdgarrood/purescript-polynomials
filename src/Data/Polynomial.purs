@@ -203,7 +203,7 @@ parenthesise str =
 
 -- | We can consider the set of polynomials with real coefficients as a real vector
 -- | space. In this case, this function defines an inner product given by the
--- | integral of the product of the arguments between 0 and 1.
+-- | integral of the product of the arguments over the interval [0,1].
 innerProduct :: Polynomial Number -> Polynomial Number -> Number
 innerProduct p q = evaluate (antiderivative (p*q)) 1.0
 
@@ -215,14 +215,14 @@ norm p = Math.sqrt (innerProduct p p)
 -- | projection of `q` onto `p`. If we let `r = projection p q`, then `r`
 -- | satisfies the following properties:
 -- |
--- | * `innerProduct (q - r) p == 0` (approximately)
--- | * `innerProduct p r ==  norm p * norm r i.e. `p` and `r` are linearly
+-- | * `innerProduct (q - r) p == 0.0` (approximately)
+-- | * `innerProduct p r ==  norm p * norm r`, i.e. `p` and `r` are linearly
 -- |    dependent.
 projection :: Polynomial Number -> Polynomial Number -> Polynomial Number
 projection p q = constant (innerProduct p q / innerProduct p p) * p
 
--- | Gives the derivative of a polynomial. For example, the derivative of `x^2
--- | + 3x + 2` is `2x + 3`.
+-- | Gives the derivative of a polynomial. For example, the derivative of
+-- | `x^2 + 3x + 2` is `2x + 3`.
 -- |
 -- | ```purescript
 -- | antiderivative (fromCoefficients [2.0,3.0,1.0])
